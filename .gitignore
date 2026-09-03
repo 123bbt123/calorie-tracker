@@ -1,0 +1,11 @@
+# 依赖
+node_modules/
+
+# WorkBuddy 本地元数据
+.workbuddy/
+.edgeone/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+*.log

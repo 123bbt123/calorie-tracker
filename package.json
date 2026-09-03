@@ -1,0 +1,12 @@
+{
+  "name": "rishiji",
+  "version": "1.0.0",
+  "description": "日食迹 - 热量管理工作台",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.22.2"
+  }
+}
