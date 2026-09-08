@@ -1890,3 +1890,148 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ============================
+   估算悬浮小按钮（今日页）
+   ============================ */
+.estimate-fab {
+  position: fixed;
+  right: calc((100vw - min(100vw, var(--max-width))) / 2 + 16px);
+  bottom: 24px;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--primary) 0%, #FB923C 100%);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  line-height: 1;
+  box-shadow: 0 8px 20px rgba(249,115,22,0.4);
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.estimate-fab:hover {
+  box-shadow: 0 10px 24px rgba(249,115,22,0.5);
+}
+.estimate-fab:active {
+  transform: scale(.94);
+}
+.estimate-fab-icon {
+  font-size: 17px;
+}
+.estimate-fab-spacer {
+  height: 84px;
+}
+
+/* 空白餐次的点击区：点击直接进入估算 */
+.meal-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 22px 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+.meal-add-btn:hover,
+.meal-add-btn:active {
+  background: #FFF7ED;
+  color: var(--primary);
+}
+.meal-add-plus {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--primary);
+}
+.meal-add-more {
+  padding: 12px;
+  border-top: 1px dashed var(--border);
+  font-size: 12px;
+}
+
+/* ============================
+   估算全屏视图（估算内容折叠于此）
+   ============================ */
+.estimate-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--bg);
+  z-index: 500;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.estimate-overlay-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  box-shadow: 0 0 32px rgba(0,0,0,0.08);
+}
+.estimate-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, var(--primary) 0%, #FB923C 100%);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(249,115,22,0.25);
+}
+.estimate-back-btn {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255,255,255,0.45);
+  border-radius: 50%;
+  background: rgba(255,255,255,0.18);
+  color: #fff;
+  font-size: 22px;
+  line-height: 1;
+  padding-bottom: 2px;
+  cursor: pointer;
+  transition: background .2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.estimate-back-btn:hover {
+  background: rgba(255,255,255,0.32);
+}
+.estimate-topbar-title h2 {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: .3px;
+}
+.estimate-topbar-title span {
+  display: block;
+  font-size: 12px;
+  opacity: .88;
+  margin-top: 1px;
+}
+.estimate-overlay #tab-estimate {
+  flex: 1;
+  padding: 16px;
+  padding-bottom: 56px;
+}
+/* 估算内容里原有的标题区与顶部栏重复，隐藏 */
+.estimate-overlay #tab-estimate > .section-header {
+  display: none;
+}
