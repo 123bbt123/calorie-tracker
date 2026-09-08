@@ -27,10 +27,11 @@ const AI_PRESETS = {
 // ============================
 let state = {
   currentDate: new Date(),
-  currentTab: 'estimate',
+  currentTab: 'today',
   meals: [],
   estimationResult: null,
   currentImageBase64: null,
+  pendingMealType: null, // 点击空白餐次进入估算时待记录的餐次
   // 用户档案：currentProfileId 是数据隔离 key，roomCode 等于它
   currentProfileId: localStorage.getItem('currentProfileId') || null,
   profiles: JSON.parse(localStorage.getItem('profiles') || '[]'),
@@ -897,6 +898,66 @@ function switchTab(tab) {
   }
 }
 
+// ============================
+// 估算全屏视图（今日页作为首页，估算折叠为入口按钮）
+// ============================
+function mountEstimateOverlay() {
+  const section = document.getElementById('tab-estimate');
+  if (!section || document.getElementById('estimateOverlay')) return;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'estimateOverlay';
+  overlay.className = 'estimate-overlay';
+  overlay.style.display = 'none';
+
+  const inner = document.createElement('div');
+  inner.className = 'estimate-overlay-inner';
+
+  const topbar = document.createElement('div');
+  topbar.className = 'estimate-topbar';
+  topbar.innerHTML = `
+    <button type="button" class="estimate-back-btn" id="estimateBackBtn" aria-label="返回今日">‹</button>
+    <div class="estimate-topbar-title">
+      <h2 id="estimateOverlayTitle">热量估算</h2>
+      <span id="estimateOverlaySub">拍照或描述食物，AI 帮你估算热量</span>
+    </div>
+  `;
+
+  section.classList.remove('tab-content', 'active');
+  inner.appendChild(topbar);
+  inner.appendChild(section);
+  overlay.appendChild(inner);
+  document.body.appendChild(overlay);
+}
+
+function openEstimateView(mealType) {
+  state.pendingMealType = mealType || null;
+  resetEstimateUI();
+  const overlay = document.getElementById('estimateOverlay');
+  const mt = MEAL_TYPES.find(x => x.key === mealType);
+  document.getElementById('estimateOverlayTitle').textContent =
+    mt ? `${mt.icon} 记录${mt.label}的热量` : '热量估算';
+  document.getElementById('estimateOverlaySub').textContent =
+    mt ? `估算完成后将直接记入「${mt.label}」，无需再选餐次` : '拍照或描述食物，AI 帮你估算热量';
+  overlay.style.display = 'block';
+  overlay.scrollTop = 0;
+}
+
+function closeEstimateView() {
+  state.pendingMealType = null;
+  resetEstimateUI();
+  const overlay = document.getElementById('estimateOverlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+function handleRecordAction() {
+  if (state.pendingMealType) {
+    recordMeal(state.pendingMealType); // 从空白餐次进入：直接记入该餐
+  } else {
+    openMealTypeModal(); // 保留原有功能：估算完成后选择餐次
+  }
+}
+
 function renderEstimateResult(result) {
   const card = document.getElementById('resultCard');
   const loadingCard = document.getElementById('loadingCard');
@@ -990,7 +1051,10 @@ function renderTodayTab() {
       </div>
       <div class="meal-section-body">
         ${mtMeals.length === 0
-          ? '<div class="empty-state">暂无记录</div>'
+          ? `<button type="button" class="meal-add-btn" data-meal-add="${mt.key}">
+              <span class="meal-add-plus">＋</span>
+              <span>点击估算记录${mt.label}</span>
+            </button>`
           : mtMeals.map(m => `
             <div class="meal-record" data-id="${m.id}">
               <div class="meal-record-info">
@@ -1004,6 +1068,13 @@ function renderTodayTab() {
               ${m.notes ? `<div class="meal-record-notes">${escapeHtml(m.notes).replace(/\\n/g, '<br>')}</div>` : ''}
             </div>
           `).join('')
+        }
+        ${mtMeals.length > 0
+          ? `<button type="button" class="meal-add-btn meal-add-more" data-meal-add="${mt.key}">
+              <span class="meal-add-plus">＋</span>
+              <span>再为${mt.label}加一条记录</span>
+            </button>`
+          : ''
         }
       </div>
     `;
@@ -1657,15 +1728,19 @@ function openManualModal() {
     `<option value="${mt.key}">${mt.icon} ${mt.label}</option>`
   ).join('');
 
-  // 根据当前时间选择默认餐次
-  const hour = new Date().getHours();
-  let defaultType = 'other';
-  if (hour >= 5 && hour < 10) defaultType = 'breakfast';
-  else if (hour >= 10 && hour < 14) defaultType = 'lunch';
-  else if (hour >= 14 && hour < 17) defaultType = 'afternoon_tea';
-  else if (hour >= 17 && hour < 21) defaultType = 'dinner';
-  else if (hour >= 21) defaultType = 'late_night';
-  select.value = defaultType;
+  // 从空白餐次进入时默认选中该餐次，否则根据当前时间选择默认餐次
+  if (state.pendingMealType && MEAL_TYPES.some(mt => mt.key === state.pendingMealType)) {
+    select.value = state.pendingMealType;
+  } else {
+    const hour = new Date().getHours();
+    let defaultType = 'other';
+    if (hour >= 5 && hour < 10) defaultType = 'breakfast';
+    else if (hour >= 10 && hour < 14) defaultType = 'lunch';
+    else if (hour >= 14 && hour < 17) defaultType = 'afternoon_tea';
+    else if (hour >= 17 && hour < 21) defaultType = 'dinner';
+    else if (hour >= 21) defaultType = 'late_night';
+    select.value = defaultType;
+  }
 
   document.getElementById('manualFoodName').value = '';
   document.getElementById('manualCalories').value = '';
@@ -1733,8 +1808,8 @@ async function recordMeal(mealType) {
   state.meals.push(meal);
   saveLocalMeals(dateStr, state.meals);
 
-  // 清理估算
-  resetEstimateUI();
+  // 关闭估算视图，回到今日页
+  closeEstimateView();
 
   showToast('✅ 已记入今日摄入');
 
@@ -1777,8 +1852,9 @@ async function saveManualEntry() {
     state.meals.push(meal);
     saveLocalMeals(dateStr, state.meals);
     closeManualModal();
+    closeEstimateView();
     showToast('✅ 已记录');
-    renderTodayTab();
+    switchTab('today');
   } else {
     // AI 估算
     closeManualModal();
@@ -1817,7 +1893,7 @@ async function saveManualEntry() {
 
       state.meals.push(meal);
       saveLocalMeals(dateStr, state.meals);
-      resetEstimateUI();
+      closeEstimateView();
       showToast('✅ AI 估算并记录成功');
       switchTab('today');
     } catch (e) {
@@ -1881,6 +1957,7 @@ function resetEstimateUI() {
   state.estimationResult = null;
   state.currentImageBase64 = null;
   document.getElementById('resultCard').style.display = 'none';
+  document.getElementById('loadingCard').style.display = 'none';
   document.getElementById('uploadPreview').style.display = 'none';
   document.getElementById('uploadPlaceholder').style.display = 'block';
   document.getElementById('foodText').value = '';
@@ -2000,16 +2077,19 @@ async function handleEstimate() {
 
   if (hasImage && !hasText && !visionConfig.apiKey) {
     showToast('拍照识别需要配置智谱 API Key，请在设置中配置');
+    closeEstimateView();
     switchTab('settings');
     return;
   }
   if (!hasImage && !config.apiKey) {
     showToast('请先在设置中配置 DeepSeek API Key');
+    closeEstimateView();
     switchTab('settings');
     return;
   }
   if (hasImage && hasText && !visionConfig.apiKey && !config.apiKey) {
     showToast('请先在设置中配置 AI API Key');
+    closeEstimateView();
     switchTab('settings');
     return;
   }
@@ -2806,7 +2886,15 @@ function bindEvents() {
   // 估算
   document.getElementById('estimateBtn').addEventListener('click', handleEstimate);
   document.getElementById('reEstimateBtn').addEventListener('click', handleReEstimate);
-  document.getElementById('recordBtn').addEventListener('click', openMealTypeModal);
+  document.getElementById('recordBtn').addEventListener('click', handleRecordAction);
+  document.getElementById('estimateFab').addEventListener('click', () => openEstimateView(null));
+  document.getElementById('estimateBackBtn').addEventListener('click', closeEstimateView);
+
+  // 今日页空白餐次 → 直接进入估算（带餐次）
+  document.getElementById('mealSections').addEventListener('click', (e) => {
+    const addBtn = e.target.closest('[data-meal-add]');
+    if (addBtn) openEstimateView(addBtn.dataset.mealAdd);
+  });
 
   // 语音输入
   document.getElementById('micBtn').addEventListener('click', toggleVoiceInput);
@@ -2900,6 +2988,7 @@ async function handleImageFile(file) {
 // ============================
 async function init() {
   initSupabase();
+  mountEstimateOverlay();
   bindEvents();
   updateDateDisplay();
 
