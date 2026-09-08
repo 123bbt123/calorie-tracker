@@ -109,16 +109,15 @@
 
     <!-- 标签栏 -->
     <nav class="tab-bar">
-      <button class="tab active" data-tab="estimate">📷 估算</button>
-      <button class="tab" data-tab="today">📋 今日</button>
+      <button class="tab active" data-tab="today">📋 今日</button>
       <button class="tab" data-tab="reports">📊 报告</button>
       <button class="tab" data-tab="settings">⚙️ 设置</button>
     </nav>
 
     <!-- 主内容区 -->
     <main class="main-content">
-      <!-- 估算页 -->
-      <section id="tab-estimate" class="tab-content active">
+      <!-- 估算页（运行时挂载为全屏估算视图） -->
+      <section id="tab-estimate" class="tab-content">
         <div class="section-header">
           <h2>热量估算</h2>
           <p class="section-desc">拍照或描述食物，AI 帮你估算热量</p>
@@ -205,9 +204,10 @@
       </section>
 
       <!-- 今日页 -->
-      <section id="tab-today" class="tab-content">
+      <section id="tab-today" class="tab-content active">
         <div class="section-header">
           <h2>今日摄入</h2>
+          <p class="section-desc">点击空白餐次可直接估算并记录 · 右下角 📷 估算可随时录入</p>
         </div>
 
         <!-- 今日总热量 -->
@@ -262,6 +262,12 @@
         <button class="btn btn-outline btn-block" id="generateAnalysisBtn" style="margin-top:12px">
           <span class="btn-icon">🤖</span> 生成今日分析
         </button>
+
+        <!-- 估算小按钮（悬浮） -->
+        <button class="estimate-fab" id="estimateFab" type="button" title="拍照或描述食物进行热量估算">
+          <span class="estimate-fab-icon">📷</span> 估算
+        </button>
+        <div class="estimate-fab-spacer"></div>
       </section>
 
       <!-- 报告页 -->
